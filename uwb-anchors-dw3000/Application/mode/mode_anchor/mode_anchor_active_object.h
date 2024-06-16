@@ -29,7 +29,7 @@ typedef enum{
 typedef enum{
 	ANCHOR_RESET_DWIC_SM,
 	ANCHOR_INIT_SM,
-    WAIT_TAG_SEND_POLL_MSG_SM,
+    ANCHOR_LOOP_SM,
     MAX_SM,
 }proobject_state_t;
 
@@ -62,10 +62,10 @@ typedef struct{
     uint8_t ss;
 }proobject_tick_event_t;
 
+uint8_t getnextstatesig();
+void resetnextstatesig();
+
 void proobject_init(proobject_t *const mobj);
 event_status_t proobject_state_machine(proobject_t *const mobj, event_t const * const e);
-
-
-uint8_t process_envent();
 
 #endif /* MODE_ANCHOR_ACTIVE_OBJECT_H_ */

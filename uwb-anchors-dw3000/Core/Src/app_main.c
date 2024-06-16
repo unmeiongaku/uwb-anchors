@@ -10,6 +10,8 @@
 #include "user_define.h"
 #include "timer.h"
 #include "mode_anchor.h"
+#include "lcd.h"
+#include "delay_us.h"
 
 typedef void (*func_t)(void);
 
@@ -43,10 +45,17 @@ static void led_callback(){
 void app_main(){
 	HAL_TIM_Base_Start(&TIM_DELAY_US);
 	buzzer_sys_start();
+	/*LCD*/
+	SSD1306_Init();
+	SSD1306_Clear();
+	SSD1306_DrawBitmap(0, 0, drone_logo, 128, 64, 1);
+	SSD1306_UpdateScreen();
+	delay_ms(2000);
+	/*Start App*/
 	timer_register_callback(led_callback, 500, 0, TIMER_MODE_REPEAT);
 	// Run default mode
 	app_reset(&g_app, mode_anchor_init, mode_run_deinit);
-	app_run_init(&g_app);
+	app_init(&g_app);
 }
 
 

@@ -19,7 +19,7 @@
  *                              APP global variables
  *
  *******************************************************************************/
-extern SPI_HandleTypeDef hspi4;
+extern SPI_HandleTypeDef hspi1;
 //extern SPI_HandleTypeDef *hcurrent_active_spi;
 //extern uint16_t          pin_io_active_spi;
 //extern GPIO_PinState     SPI_CS_state;
@@ -357,8 +357,8 @@ void led_on(led_t led)
  * */
 void port_set_dw_ic_spi_slowrate(void)
 {
-	hspi4.Init.BaudRatePrescaler=SPI_BAUDRATEPRESCALER_16;
-    HAL_SPI_Init(&hspi4);
+	hspi1.Init.BaudRatePrescaler=SPI_BAUDRATEPRESCALER_16;
+    HAL_SPI_Init(&hspi1);
 }
 
 /* @fn      port_set_dw_ic_spi_fastrate
@@ -367,8 +367,8 @@ void port_set_dw_ic_spi_slowrate(void)
  * */
 void port_set_dw_ic_spi_fastrate(void)
 {
-	hspi4.Init.BaudRatePrescaler=SPI_BAUDRATEPRESCALER_2;
-    HAL_SPI_Init(&hspi4);
+	hspi1.Init.BaudRatePrescaler=SPI_BAUDRATEPRESCALER_2;
+    HAL_SPI_Init(&hspi1);
 }
 
 /* @fn      port_LCD_RS_set

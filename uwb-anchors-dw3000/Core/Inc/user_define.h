@@ -15,7 +15,16 @@
 #define MAX_CALLBACK_FUNC 10
 #define UWB_PERIOD_CALLBACK 5
 
-
+#define SSD1306_I2C			hi2c1
+#define SSD1306_STATUS 									0
+//0X78 				0
+//0X7A 				1
+/*SSD1306_DEFINE_FUNC*/
+#if SSD1306_STATUS == 0
+#define SSD1306_STATUS_I2C_ADDR			(0x78 << 1)
+#elif SSD1306_STATUS == 1
+#define SSD1306_STATUS_ADDR			(0x7A << 1)
+#endif
 
 #define TIM_DELAY_US											htim6
 #define TIM_DELAY_MS											htim6

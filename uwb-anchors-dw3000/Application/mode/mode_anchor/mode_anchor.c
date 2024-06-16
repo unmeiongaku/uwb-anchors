@@ -9,6 +9,8 @@
 #include "timer.h"
 #include "mode_anchor_active_object.h"
 #include "user_define.h"
+#include "lcd.h"
+//#include "ssd1306.h"
 
 TID(gtid_uwb_anchors);
 
@@ -21,7 +23,7 @@ static void uwb_callback(void* ctx){
 	static uint16_t tickcnt = 0;
 	proobject_user_event_t ue;
 	static proobject_tick_event_t te;
-	proevent = process_envent();
+	proevent = getnextstatesig();
 	/*Make Event*/
 	switch(proevent){
 	case NEXT_SIG_DEFINE:
@@ -30,10 +32,10 @@ static void uwb_callback(void* ctx){
 	}
 		break;
 	}
+	resetnextstatesig();
 	proobject_event_dispatcher(&A0s,&ue.super);
-
-	//4. dispatch the time tick event for every  20ms
-	if(tickcnt==10){
+	//4. dispatch the time tick event for every  UWB_PERIOD_CALLBACK*10ms
+	if(tickcnt==UWB_PERIOD_CALLBACK*10){
 		te.super.sig = TICK_SIG;
 		proobject_event_dispatcher(&A0s,&te.super);
 		tickcnt = 0;
