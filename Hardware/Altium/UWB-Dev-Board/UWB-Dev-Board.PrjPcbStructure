@@ -1,0 +1,3 @@
+Record=TopLevelDocument|FileName=[1]PowerSupply.SchDoc|SheetNumber=1
+Record=NoMainPathDocument|SourceDocument=[1]PowerSupply.SchDoc|FileName=[2] MicroController.SchDoc|SheetNumber=2
+Record=NoMainPathDocument|SourceDocument=[1]PowerSupply.SchDoc|FileName=[3] Sensors.SchDoc|SheetNumber=3

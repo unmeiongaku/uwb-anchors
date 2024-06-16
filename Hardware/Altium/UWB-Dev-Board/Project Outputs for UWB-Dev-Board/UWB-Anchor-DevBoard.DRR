@@ -1,0 +1,21 @@
+----------------------------------------------------------------------------------------------------------------------------------
+NCDrill File Report For: UWB-Anchor-DevBoard.PcbDoc   3/28/2024  2:53:52 PM
+----------------------------------------------------------------------------------------------------------------------------------
+
+Layer Pair : Top Layer to Bottom Layer
+ASCII RoundHoles File : UWB-Anchor-DevBoard.TXT
+
+Tool       Hole Size               Hole Tolerance               Hole Type       Hole Count   Plated         Tool Travel
+----------------------------------------------------------------------------------------------------------------------------------
+T1      12mil (0.3mm)                                             Round             116       PTH        0.00inch (0.00mm)
+T2      20mil (0.5mm)                                             Round             10        PTH        0.00inch (0.00mm)
+T3      32mil (0.8mm)                                             Round             8         PTH        0.00inch (0.00mm)
+T4      40mil (1.021mm)                                           Round             26        PTH        0.00inch (0.00mm)
+T5      49mil (1.25mm)                                            Round             12        PTH        0.00inch (0.00mm)
+T6      110mil (2.799mm)                                          Round             6         PTH        0.00inch (0.00mm)
+T7      118mil (3mm)                                              Round             2         PTH        0.00inch (0.00mm)
+T8      158mil (4.001mm)                                          Round             2         PTH        0.00inch (0.00mm)
+----------------------------------------------------------------------------------------------------------------------------------
+Totals                                                                              182
+
+Total Processing Time (hh:mm:ss) : 00:00:00
