@@ -5,7 +5,17 @@
  *      Author: nguye
  */
 
-#define MAX_CALLBACK_FUNC 20
+#include "main.h"
+#include "i2c.h"
+#include "spi.h"
+#include "tim.h"
+#include "usart.h"
+#include "gpio.h"
+
+#define MAX_CALLBACK_FUNC 10
+#define UWB_PERIOD_CALLBACK 5
+
+
 
 #define TIM_DELAY_US											htim6
 #define TIM_DELAY_MS											htim6
@@ -36,5 +46,7 @@
 #endif
 
 
+/*UWB State Machine Define*/
+#define NEXT_SIG_DEFINE 				1
 
 #endif /* INC_USER_DEFINE_H_ */
