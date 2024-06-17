@@ -12,8 +12,9 @@
 #include "usart.h"
 #include "gpio.h"
 
-#define MAX_CALLBACK_FUNC 10
-#define UWB_PERIOD_CALLBACK 5
+#define MAX_CALLBACK_FUNC 					10
+#define UWB_PERIOD_CALLBACK 				5
+#define PRESCALER_TIME_TICK_PERIOD		5
 
 #define SSD1306_I2C			hi2c1
 #define SSD1306_STATUS 									0

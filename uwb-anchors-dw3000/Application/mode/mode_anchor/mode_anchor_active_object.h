@@ -23,7 +23,6 @@ typedef enum{
 	NEXT_SIG = 1,
 	FALSE_SIG,
 
-
 	OVERLOAD_BUFER_SIG,
 	RX_POLL_MSG_SIG,
 	RX_FINAL_MSG_SIG,
@@ -74,6 +73,12 @@ typedef struct proobject_tag {
 	uint8_t frame_seq_nb;
 
 	uint32_t resp_tx_time;
+
+	/*tof and distance*/
+	double tof, distance;
+
+	float rssi;
+
 	int ret;
 
     proobject_state_t active_state;

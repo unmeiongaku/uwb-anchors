@@ -60,7 +60,7 @@ static void uwb_callback(void* ctx){
 	resetnextstatesig();
 	proobject_event_dispatcher(&A0s,&ue.super);
 	//4. dispatch the time tick event for every  UWB_PERIOD_CALLBACK*10ms
-	if(tickcnt==UWB_PERIOD_CALLBACK*10){
+	if(tickcnt==UWB_PERIOD_CALLBACK*PRESCALER_TIME_TICK_PERIOD){
 		te.super.sig = TICK_SIG;
 		proobject_event_dispatcher(&A0s,&te.super);
 		tickcnt = 0;

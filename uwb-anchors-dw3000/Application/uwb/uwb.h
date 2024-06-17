@@ -8,11 +8,6 @@
 #ifndef UWB_H_
 #define UWB_H_
 
-#include "stdbool.h"
-
-typedef struct{
-
-}uwb_t;
-
+float getRSSI(uint32_t C, uint16_t N, uint8_t D, float A);
 
 #endif /* UWB_H_ */

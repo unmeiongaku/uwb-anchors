@@ -20,8 +20,15 @@
 #include "stdio.h"
 #include "lcd.h"
 #include "deca_probe_interface.h"
+#include "uwb.h"
 
-
+static dwt_rxdiag_t rx_diag;
+uint32_t C; // Channel Impulse Response Power; ipatovPower
+uint16_t N; // Preamble Accumulation Count; ipatovAccumCount
+uint8_t D; // DGC_DECISION (0 to 7)
+const float A = 121.7;
+float rssi;
+char rssi_str[16] = {'\0'};
 
 /* Hold the amount of errors that have occurred */
 static uint32_t errors[23] = { 0 };
@@ -29,6 +36,9 @@ static uint32_t errors[23] = { 0 };
 extern dwt_config_t config_options;
 extern dwt_txconfig_t txconfig_options;
 extern dwt_txconfig_t txconfig_options_ch9;
+
+/* Inter-ranging delay period, in milliseconds. */
+#define RNG_DELAY_MS 1000
 
 #if (ANCHOR_TYPE == 'A')
 		/*Create a tx_poll_msg send from Anchor A to Tag*/
@@ -321,7 +331,6 @@ static event_status_t proobject_state_handle_INIT_SM(proobject_t *const mobj, ev
 	return EVENT_IGNORED;
 }
 
-
 static event_status_t proobject_state_handle_ANCHOR_RX_POLLING_CHECKING_SM(proobject_t *const mobj, event_t const *const e){
 	switch(e->sig){
 		case ENTRY:
@@ -437,6 +446,11 @@ static event_status_t proobject_state_handle_ANCHOR_FALSE_POLLING_CHECKING_SM(pr
 	{
 		return EVENT_HANDLED;
 	}
+	case TICK_SIG:
+	{
+		nextstatesig = NEXT_SIG_DEFINE;
+		return EVENT_HANDLED;
+	}
 	case NEXT_SIG:
 	{
 		mobj->active_state = ANCHOR_RX_POLLING_CHECKING_SM;
@@ -472,37 +486,72 @@ static event_status_t proobject_state_handle_ANCHOR_CLASSIFY_RX_BUFFER_SM(proobj
 		{
             if (mobj->frame_len <= sizeof(rx_buffer))
             {
-           	 dwt_readrxdata(rx_buffer, mobj->frame_len, 0);
-                /* Check that the frame is a poll sent by "SS TWR initiator STS" example.
-                 * As the sequence number field of the frame is not relevant, it is cleared to simplify the validation of the frame. */
-           	 rx_buffer[ALL_MSG_SN_IDX] = 0;
-			 if (memcmp(rx_buffer, rx_poll_msg, ALL_MSG_COMMON_LEN) == 0)
-			 {
-
-			 }
-			 else if (memcmp(rx_buffer, rx_final_msg, ALL_MSG_COMMON_LEN) == 0)
-			 {
-
-			 }
-			 else{
-				errors[BAD_FRAME_ERR_IDX] += 1;
-				/*
-				 * If any error occurs, we can reset the STS count back to default value.
-				 */
-				mobj->messageFlag = 0;
-			 }
+				 dwt_readrxdata(rx_buffer, mobj->frame_len, 0);
+					/* Check that the frame is a poll sent by "SS TWR initiator STS" example.
+					 * As the sequence number field of the frame is not relevant, it is cleared to simplify the validation of the frame. */
+				 rx_buffer[ALL_MSG_SN_IDX] = 0;
+				 if (memcmp(rx_buffer, rx_poll_msg, ALL_MSG_COMMON_LEN) == 0)
+				 {
+					 nextstatesig = RX_POLL_MSG_DEFINE;
+				 }
+				 else if (memcmp(rx_buffer, rx_final_msg, ALL_MSG_COMMON_LEN) == 0)
+				 {
+					 nextstatesig = RX_FINAL_MSG_DEFINE;
+				 }
+				 else{
+					 nextstatesig = RX_NO_MSG_DEFINE;
+				 }
             }
             else{
-            	nextstatesig = FALSE_SIG_DEFINE;
+            	nextstatesig = OVERLOAD_RX_BUFFER_DEFINE;
             }
-
 			return EVENT_HANDLED;
+		}
+		case OVERLOAD_BUFER_SIG:
+		{
+			mobj->active_state = ANCHOR_OVERLOAD_RX_BUFER_SM;
+			return EVENT_TRANSITION;
+		}
+		case RX_POLL_MSG_SIG:
+		{
+			mobj->active_state = ANCHOR_RX_POLL_MSG_SM;
+			return EVENT_TRANSITION;
+		}
+		case RX_FINAL_MSG_SIG:
+		{
+			mobj->active_state = ANCHOR_RX_FINAL_MSG_SM;
+			return EVENT_TRANSITION;
+		}
+		case RX_NO_MSG_SIG:
+		{
+			mobj->active_state = ANCHOR_RX_NO_MSG_SM;
+			return EVENT_TRANSITION;
 		}
 	}
 	return EVENT_IGNORED;
 }
 
 static event_status_t proobject_state_handle_ANCHOR_OVERLOAD_RX_BUFER_SM(proobject_t *const mobj, event_t const *const e){
+	switch(e->sig){
+		case ENTRY:
+		{
+            errors[RTO_ERR_IDX] += 1;
+            /*
+             * If any error occurs, we can reset the STS count back to default value.
+             */
+            mobj->messageFlag = 0;
+            nextstatesig = NEXT_SIG_DEFINE;
+		}
+		case EXIT:
+		{
+			return EVENT_HANDLED;
+		}
+		case NEXT_SIG:
+		{
+			mobj->active_state = ANCHOR_RX_POLLING_CHECKING_SM;
+			return EVENT_TRANSITION;
+		}
+	}
 	return EVENT_IGNORED;
 }
 
@@ -574,18 +623,123 @@ static event_status_t proobject_state_handle_ANCHOR_RX_POLL_MSG_SM(proobject_t *
                      * we would be unable to receive it.
                      */
                     mobj->messageFlag = 1;
+                    nextstatesig = NEXT_SIG_DEFINE;
 				}
 			}
 			return EVENT_HANDLED;
 		}
+		case NEXT_SIG:
+		{
+			mobj->active_state = ANCHOR_RX_POLLING_CHECKING_SM;
+			return EVENT_TRANSITION;
+		}
 	}
-
 	return EVENT_IGNORED;
 }
 static event_status_t  proobject_state_handle_ANCHOR_RX_FINAL_MSG_SM(proobject_t *const mobj, event_t const *const e){
+	switch(e->sig){
+		case ENTRY:
+		{
+            uint64_t final_rx_ts;
+            uint32_t poll_tx_ts, resp_rx_ts, final_tx_ts;
+            uint32_t poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
+            double Ra, Rb, Da, Db, tof, distance;
+            int64_t tof_dtu;
+
+            /* Retrieve response transmission and final reception timestamps. */
+            mobj->resp_tx_ts = get_tx_timestamp_u64();
+            final_rx_ts = get_rx_timestamp_u64();
+
+            /* Get timestamps embedded in the final message. */
+            final_msg_get_ts(&rx_buffer[FINAL_MSG_POLL_TX_TS_IDX], &poll_tx_ts);
+            final_msg_get_ts(&rx_buffer[FINAL_MSG_RESP_RX_TS_IDX], &resp_rx_ts);
+            final_msg_get_ts(&rx_buffer[FINAL_MSG_FINAL_TX_TS_IDX], &final_tx_ts);
+
+            /* Compute time of flight. 32-bit subtractions give correct answers even if clock has wrapped. See NOTE 15 below. */
+            poll_rx_ts_32 = (uint32_t)mobj->poll_rx_ts;
+            resp_tx_ts_32 = (uint32_t)mobj->resp_tx_ts;
+            final_rx_ts_32 = (uint32_t)final_rx_ts;
+            Ra = (double)(resp_rx_ts - poll_tx_ts);
+            Rb = (double)(final_rx_ts_32 - resp_tx_ts_32);
+            Da = (double)(final_tx_ts - resp_rx_ts);
+            Db = (double)(resp_tx_ts_32 - poll_rx_ts_32);
+            tof_dtu = (int64_t)((Ra * Rb - Da * Db) / (Ra + Rb + Da + Db));
+
+            tof = tof_dtu * DWT_TIME_UNITS;
+            distance = tof * SPEED_OF_LIGHT;
+
+            mobj->tof = tof;
+            mobj->distance = distance;
+
+#if NUMBER_OF_TAG!=1
+            // set back allMSGCOMMONLEN to 7 for get msg form another initiator
+            allMSGCOMMONLEN = 7;
+#endif
+            /* ====> Get params for diagnostic (in progress) <==== */
+			//C = STS_DIAG_1 to jest pole ipatovPower
+			//N = STS_DIAG_12 to jest pole ipatovAccumCount
+			dwt_readdiagnostics(&rx_diag);
+			C = rx_diag.ipatovPower;
+			N = rx_diag.ipatovAccumCount;
+			/* ====> Read DGC here <==== */
+			D = dwt_get_dgcdecision();
+			/* ====> Calculate RSSI <==== */
+			rssi = getRSSI(C, N, D, A);
+
+			mobj->rssi = rssi;
+			return EVENT_HANDLED;
+		}
+		case EXIT:
+		{
+			return EVENT_HANDLED;
+		}
+		case NEXT_SIG:
+		{
+			mobj->active_state = ANCHOR_RX_POLLING_CHECKING_SM;
+			return EVENT_TRANSITION;
+		}
+		case TICK_SIG:
+		{
+            /* as DS-TWR initiator is waiting for RNG_DELAY_MS before next poll transmission
+             * we can add a delay here before RX is re-enabled again
+             */
+			static uint16_t rxdelayend;
+			static uint8_t rxdelay = 0;
+			rxdelayend = RNG_DELAY_MS / (UWB_PERIOD_CALLBACK*PRESCALER_TIME_TICK_PERIOD);
+			if(rxdelay == rxdelayend){
+				mobj->messageFlag = 0;
+				nextstatesig = NEXT_SIG_DEFINE;
+				rxdelay = 0;
+			}
+			else{
+				rxdelay++;
+			}
+		}
+	}
 	return EVENT_IGNORED;
 }
 static event_status_t proobject_state_handle_ANCHOR_RX_NO_MSG_SM(proobject_t *const mobj, event_t const *const e){
+	switch(e->sig){
+		case ENTRY:
+		{
+            errors[BAD_FRAME_ERR_IDX] += 1;
+            /*
+             * If any error occurs, we can reset the STS count back to default value.
+             */
+            mobj->messageFlag = 0;
+            nextstatesig = NEXT_SIG_DEFINE;
+			return EVENT_HANDLED;
+		}
+		case EXIT:
+		{
+			return EVENT_HANDLED;
+		}
+		case NEXT_SIG:
+		{
+			mobj->active_state = ANCHOR_RX_POLLING_CHECKING_SM;
+			return EVENT_TRANSITION;
+		}
+	}
 	return EVENT_IGNORED;
 }
 
