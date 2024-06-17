@@ -31,6 +31,31 @@ static void uwb_callback(void* ctx){
 		ue.super.sig = NEXT_SIG;
 	}
 		break;
+	case FALSE_SIG_DEFINE:
+	{
+		ue.super.sig = FALSE_SIG;
+	}
+		break;
+	case OVERLOAD_RX_BUFFER_DEFINE:
+	{
+		ue.super.sig = OVERLOAD_BUFER_SIG;
+	}
+		break;
+	case RX_POLL_MSG_DEFINE:
+	{
+		ue.super.sig = RX_POLL_MSG_SIG;
+	}
+		break;
+	case RX_FINAL_MSG_DEFINE:
+	{
+		ue.super.sig = RX_FINAL_MSG_SIG;
+	}
+		break;
+	case RX_NO_MSG_DEFINE:
+	{
+		ue.super.sig = RX_NO_MSG_SIG;
+	}
+		break;
 	}
 	resetnextstatesig();
 	proobject_event_dispatcher(&A0s,&ue.super);
@@ -48,6 +73,7 @@ static void uwb_callback(void* ctx){
 void mode_anchor_init(){
 	proobject_init(&A0s);
 	gtid_uwb_anchors = timer_register_callback(uwb_callback, UWB_PERIOD_CALLBACK, 0, TIMER_MODE_REPEAT);
+
 }
 
 void mode_run_deinit(){

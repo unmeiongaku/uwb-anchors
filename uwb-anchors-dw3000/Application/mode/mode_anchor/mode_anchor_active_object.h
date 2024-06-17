@@ -9,6 +9,7 @@
 #define MODE_ANCHOR_ACTIVE_OBJECT_H_
 
 #include "stdint.h"
+#include "stdbool.h"
 
 typedef enum {
     EVENT_HANDLED,
@@ -20,6 +21,14 @@ typedef enum {
 typedef enum{
 /* Internal activity signals */
 	NEXT_SIG = 1,
+	FALSE_SIG,
+
+
+	OVERLOAD_BUFER_SIG,
+	RX_POLL_MSG_SIG,
+	RX_FINAL_MSG_SIG,
+	RX_NO_MSG_SIG,
+
 	TICK_SIG ,
     ENTRY,
     EXIT
@@ -29,7 +38,15 @@ typedef enum{
 typedef enum{
 	ANCHOR_RESET_DWIC_SM,
 	ANCHOR_INIT_SM,
-    ANCHOR_LOOP_SM,
+	ANCHOR_RX_POLLING_CHECKING_SM,
+	ANCHOR_FALSE_POLLING_CHECKING_SM,
+	ANCHOR_CLASSIFY_RX_BUFFER_SM,
+
+	ANCHOR_OVERLOAD_RX_BUFER_SM,
+	ANCHOR_RX_POLL_MSG_SM,
+	ANCHOR_RX_FINAL_MSG_SM,
+	ANCHOR_RX_NO_MSG_SM,
+
     MAX_SM,
 }proobject_state_t;
 
@@ -40,8 +57,25 @@ struct event_tag;
 typedef struct proobject_tag {
 	int16_t stsQual;
 	int goodSts;
+	uint16_t stsStatus;
 	uint8_t loopCount;
 	uint8_t messageFlag;
+	uint32_t status_reg;
+	bool syswait;
+	bool firstcheck;
+	bool check_lo_mask;
+	bool check_hi_mask;
+	bool error;
+	uint32_t frame_len;
+
+	/* Timestamps of frames transmission/reception. */
+	uint64_t poll_rx_ts;
+	uint64_t resp_tx_ts;
+	uint8_t frame_seq_nb;
+
+	uint32_t resp_tx_time;
+	int ret;
+
     proobject_state_t active_state;
 }proobject_t;
 

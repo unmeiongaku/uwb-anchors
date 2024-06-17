@@ -37,6 +37,7 @@
 #define PASS_SECOND_WAITSYS						2
 #define PASS_THIRD_WAITSYS							3
 
+#define NUMBER_OF_TAG		1
 
 #define ANCHOR_SELECT 		0
 /*	ANCHOR TYPE A					0
@@ -55,7 +56,11 @@
 #endif
 
 
-/*UWB State Machine Define*/
-#define NEXT_SIG_DEFINE 				1
-
+/*UWB State Machine Sig Define*/
+#define NEXT_SIG_DEFINE 						1
+#define FALSE_SIG_DEFINE 						2
+#define OVERLOAD_RX_BUFFER_DEFINE	3
+#define RX_POLL_MSG_DEFINE				4
+#define RX_FINAL_MSG_DEFINE				5
+#define RX_NO_MSG_DEFINE					6
 #endif /* INC_USER_DEFINE_H_ */

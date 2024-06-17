@@ -21,7 +21,7 @@ extern "C"
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef STM32F429xx
+#ifdef STM32L431xx
 #ifndef uint8_t
 #ifndef _DECA_UINT8_
 #define _DECA_UINT8_

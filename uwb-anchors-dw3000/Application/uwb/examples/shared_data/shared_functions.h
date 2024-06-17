@@ -7,6 +7,7 @@ extern "C"
 #endif
 
 #include "uwb.h"
+#include "mode_anchor_active_object.h"
 
 /* Power boost calculation service function defines*/
 #define LUT_1000_200_US_NUM     33 /* Number of frames duration values for which look up table has corresponding dial back in units of 0.1dB*/
@@ -205,7 +206,7 @@ extern "C"
      * return None
      */
     void waitforsysstatus(uint32_t *lo_result, uint32_t *hi_result, uint32_t lo_mask, uint32_t hi_mask);
-
+    uint8_t mywaitforsysstatus(proobject_t *const mobj, uint32_t *lo_result, uint32_t *hi_result, uint32_t lo_mask, uint32_t hi_mask);
 
 #ifdef __cplusplus
 }

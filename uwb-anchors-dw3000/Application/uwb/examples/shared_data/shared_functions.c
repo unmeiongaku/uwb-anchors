@@ -588,3 +588,91 @@ void resp_msg_set_ts(uint8_t *ts_field, const uint64_t ts)
  *
  * return None
  */
+void waitforsysstatus(uint32_t *lo_result, uint32_t *hi_result, uint32_t lo_mask, uint32_t hi_mask)
+{
+    uint32_t lo_result_tmp = 0;
+    uint32_t hi_result_tmp = 0;
+
+    // If a mask has been passed into the function for the system status register (lower 32-bits)
+    if (lo_mask)
+    {
+        while (!((lo_result_tmp = dwt_readsysstatuslo()) & (lo_mask)))
+        {
+            // If a mask value is set for the system status register (higher 32-bits)
+            if (hi_mask)
+            {
+                // If mask value for the system status register (higher 32-bits) is found
+                if ((hi_result_tmp = dwt_readsysstatushi()) & hi_mask)
+                {
+                    break;
+                }
+            }
+        }
+    }
+    // if only a mask value for the system status register (higher 32-bits) is set
+    else if (hi_mask)
+    {
+        while (!((hi_result_tmp = dwt_readsysstatushi()) & (hi_mask))) { };
+    }
+
+    if (lo_result != NULL)
+    {
+        *lo_result = lo_result_tmp;
+    }
+
+    if (hi_result != NULL)
+    {
+        *hi_result = hi_result_tmp;
+    }
+}
+
+uint8_t mywaitforsysstatus(proobject_t *const mobj, uint32_t *lo_result, uint32_t *hi_result, uint32_t lo_mask, uint32_t hi_mask)
+{
+    static uint32_t lo_result_tmp;
+    static uint32_t hi_result_tmp;
+
+    if(mobj->firstcheck == true){
+    	lo_result_tmp = 0;
+    	hi_result_tmp = 0;
+    	mobj->firstcheck = false;
+    }
+    if(mobj->check_lo_mask == false){
+        // If a mask has been passed into the function for the system status register (lower 32-bits)
+        if (lo_mask)
+        {
+        	if(!((lo_result_tmp = dwt_readsysstatuslo()) & (lo_mask))){
+                // If a mask value is set for the system status register (higher 32-bits)
+                if (hi_mask)
+                {
+                    // If mask value for the system status register (higher 32-bits) is found
+                    if ((hi_result_tmp = dwt_readsysstatushi()) & hi_mask)
+                    {
+                    	mobj->check_lo_mask = true;
+                    }
+                }
+        	}
+        }
+    }
+    else if (mobj->check_lo_mask == true && mobj->check_hi_mask == false)
+    {
+    	if(!((hi_result_tmp = dwt_readsysstatushi()) & (hi_mask))){
+    		mobj->check_hi_mask = false;
+    	}
+    	else{
+    		mobj->check_hi_mask = true;
+    	}
+    }
+    else if(mobj->check_lo_mask == true && mobj->check_hi_mask == true){
+		if (lo_result != NULL)
+		{
+			*lo_result = lo_result_tmp;
+		}
+
+		if (hi_result != NULL)
+		{
+			*hi_result = hi_result_tmp;
+		}
+		return 1;
+    }
+    return 0;
+}
