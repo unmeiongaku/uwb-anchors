@@ -29,6 +29,11 @@ void lcd_display_APP_NAME_(){
 }
 
 void lcd_display_MENU_(){
+	lcd_display_APP_NAME_();
+
+}
+
+void lcd_display_parameters(float temp, float press, float humi, float rssi, float distance){
 
 }
 

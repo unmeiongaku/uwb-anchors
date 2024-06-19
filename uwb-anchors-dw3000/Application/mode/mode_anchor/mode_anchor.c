@@ -11,12 +11,23 @@
 #include "user_define.h"
 #include "lcd.h"
 //#include "ssd1306.h"
+#include "bmp280.h"
 
 TID(gtid_uwb_anchors);
+TID(gtid_bmp280);
+TID(gtid_lcd_display);
+
 
 static proobject_t A0s;
 static void proobject_event_dispatcher(proobject_t *const mobj,event_t const *const e);
+static BMP280_HandleTypedef bmp;
 
+static float temperature,pressure,humidity;
+
+
+static void bmp280_callback(void* ctx){
+	bmp280_read_float(&bmp,&temperature,&pressure,&humidity);
+}
 
 static void uwb_callback(void* ctx){
 	static uint8_t proevent;
@@ -70,14 +81,22 @@ static void uwb_callback(void* ctx){
 	}
 }
 
+static void lcd_display_callback(void* ctx){
+	lcd_display_parameters(temperature, pressure, humidity, A0s.rssi, A0s.distance);
+}
+
+
+
 void mode_anchor_init(){
 	proobject_init(&A0s);
 	gtid_uwb_anchors = timer_register_callback(uwb_callback, UWB_PERIOD_CALLBACK, 0, TIMER_MODE_REPEAT);
-
+	gtid_bmp280 = timer_register_callback(bmp280_callback, BMP280_PERIOD_CALLBACK, 0, TIMER_MODE_REPEAT);
+	gtid_lcd_display = timer_register_callback(lcd_display_callback, LCD_PERIOD_CALLBACK, 0, TIMER_MODE_REPEAT);
 }
 
 void mode_run_deinit(){
 	timer_unregister_callback(gtid_uwb_anchors);
+	timer_unregister_callback(gtid_bmp280);
 }
 
 static void proobject_event_dispatcher(proobject_t *const mobj,event_t const *const e){
@@ -102,3 +121,5 @@ static void proobject_event_dispatcher(proobject_t *const mobj,event_t const *co
     proobject_state_machine(mobj,&ee);
   }
 }
+
+

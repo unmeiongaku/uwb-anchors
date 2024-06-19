@@ -10,8 +10,14 @@
 #include "stdbool.h"
 #include "bmp280_register_maps.h"
 #include "delay_us.h"
+#include "timer.h"
+
 
 MYIIC_HandleTypedef_t myiic;
+
+void bmp280_init_default_params(bmp280_params_t *params);
+dev_status_t read_calibration_data(BMP280_HandleTypedef *dev);
+dev_status_t read_hum_calibration_data(BMP280_HandleTypedef *dev);
 
 void bmp280_init_default_params(bmp280_params_t *params) {
 	params->mode = BMP280_MODE_NORMAL;
@@ -116,3 +122,147 @@ dev_status_t bmp280_init(BMP280_HandleTypedef *dev, bmp280_params_t *params) {
 
 	return DEV_OK;
 }
+
+
+dev_status_t bmp280_force_measurement(BMP280_HandleTypedef *dev) {
+	uint8_t ctrl;
+	dev->register_addr = BMP280_REG_CTRL;
+	if(myiic.read(dev->i2c,dev->addr,dev->register_addr,&ctrl,1) != IIC_OK) return DEV_ERROR;
+	ctrl &= ~0b11;  // clear two lower bits
+	ctrl |= BMP280_MODE_FORCED;
+	if(myiic.write(dev->i2c,dev->addr,dev->register_addr,&ctrl,1) != IIC_OK) return DEV_ERROR;
+	return DEV_OK;
+}
+
+dev_status_t bmp280_is_measuring(BMP280_HandleTypedef *dev) {
+	uint8_t status;
+	dev->register_addr = BMP280_REG_CTRL;
+	if(myiic.read(dev->i2c,dev->addr,dev->register_addr,&status,1) != IIC_OK) return DEV_ERROR;
+	if (!(status & (1 << 3))) return DEV_ERROR;
+	return DEV_OK;
+}
+
+
+/**
+ * Compensation algorithm is taken from BMP280 datasheet.
+ *
+ * Return value is in degrees Celsius.
+ */
+
+static inline int32_t compensate_temperature(BMP280_HandleTypedef *dev, int32_t adc_temp,
+		int32_t *fine_temp) {
+	int32_t var1, var2;
+
+	var1 = ((((adc_temp >> 3) - ((int32_t) dev->dig_T1 << 1)))
+			* (int32_t) dev->dig_T2) >> 11;
+	var2 = (((((adc_temp >> 4) - (int32_t) dev->dig_T1)
+			* ((adc_temp >> 4) - (int32_t) dev->dig_T1)) >> 12)
+			* (int32_t) dev->dig_T3) >> 14;
+
+	*fine_temp = var1 + var2;
+	return (*fine_temp * 5 + 128) >> 8;
+}
+
+/**
+ * Compensation algorithm is taken from BMP280 datasheet.
+ *
+ * Return value is in Pa, 24 integer bits and 8 fractional bits.
+ */
+static inline uint32_t compensate_pressure(BMP280_HandleTypedef *dev, int32_t adc_press,
+		int32_t fine_temp) {
+	int64_t var1, var2, p;
+
+	var1 = (int64_t) fine_temp - 128000;
+	var2 = var1 * var1 * (int64_t) dev->dig_P6;
+	var2 = var2 + ((var1 * (int64_t) dev->dig_P5) << 17);
+	var2 = var2 + (((int64_t) dev->dig_P4) << 35);
+	var1 = ((var1 * var1 * (int64_t) dev->dig_P3) >> 8)
+			+ ((var1 * (int64_t) dev->dig_P2) << 12);
+	var1 = (((int64_t) 1 << 47) + var1) * ((int64_t) dev->dig_P1) >> 33;
+
+	if (var1 == 0) {
+		return 0;  // avoid exception caused by division by zero
+	}
+
+	p = 1048576 - adc_press;
+	p = (((p << 31) - var2) * 3125) / var1;
+	var1 = ((int64_t) dev->dig_P9 * (p >> 13) * (p >> 13)) >> 25;
+	var2 = ((int64_t) dev->dig_P8 * p) >> 19;
+
+	p = ((p + var1 + var2) >> 8) + ((int64_t) dev->dig_P7 << 4);
+	return p;
+}
+
+/**
+ * Compensation algorithm is taken from BME280 datasheet.
+ *
+ * Return value is in Pa, 24 integer bits and 8 fractional bits.
+ */
+static inline uint32_t compensate_humidity(BMP280_HandleTypedef *dev, int32_t adc_hum,
+		int32_t fine_temp) {
+	int32_t v_x1_u32r;
+
+	v_x1_u32r = fine_temp - (int32_t) 76800;
+	v_x1_u32r = ((((adc_hum << 14) - ((int32_t) dev->dig_H4 << 20)
+			- ((int32_t) dev->dig_H5 * v_x1_u32r)) + (int32_t) 16384) >> 15)
+			* (((((((v_x1_u32r * (int32_t) dev->dig_H6) >> 10)
+					* (((v_x1_u32r * (int32_t) dev->dig_H3) >> 11)
+							+ (int32_t) 32768)) >> 10) + (int32_t) 2097152)
+					* (int32_t) dev->dig_H2 + 8192) >> 14);
+	v_x1_u32r = v_x1_u32r
+			- (((((v_x1_u32r >> 15) * (v_x1_u32r >> 15)) >> 7)
+					* (int32_t) dev->dig_H1) >> 4);
+	v_x1_u32r = v_x1_u32r < 0 ? 0 : v_x1_u32r;
+	v_x1_u32r = v_x1_u32r > 419430400 ? 419430400 : v_x1_u32r;
+	return v_x1_u32r >> 12;
+}
+
+dev_status_t bmp280_read_fixed(BMP280_HandleTypedef *dev, int32_t *temperature, uint32_t *pressure, uint32_t *humidity) {
+	int32_t adc_pressure = 0;
+	int32_t adc_temp = 0;
+	uint8_t data[8] = {0};
+
+	// Only the BME280 supports reading the humidity.
+	if (dev->id != BME280_CHIP_ID) {
+		if (humidity)
+			*humidity = 0;
+		humidity = NULL;
+	}
+
+	// Need to read in one sequence to ensure they match.
+		size_t size = humidity ? 8 : 6;
+		dev->register_addr = 0xf7;
+		if(myiic.read(dev->i2c,dev->addr,dev->register_addr,data,size) != IIC_OK) return DEV_ERROR;
+
+		adc_pressure = ((data[0] << 12) | (data[1] << 4) | data[2] >> 4);
+		adc_temp = ((data[3] << 12 | data[4] << 4) | data[5] >> 4);
+
+		int32_t fine_temp;
+		*temperature = compensate_temperature(dev, adc_temp, &fine_temp);
+	    *pressure = compensate_pressure(dev, adc_pressure, fine_temp);
+
+	    if (humidity){
+	    		int32_t adc_humidity = data[6] << 8 | data[7];
+	    		*humidity = compensate_humidity(dev, adc_humidity, fine_temp);
+	    }
+
+	return DEV_OK;
+}
+
+dev_status_t bmp280_read_float(BMP280_HandleTypedef *dev, float *temperature, float *pressure, float *humidity) {
+	int32_t fixed_temperature;
+	uint32_t fixed_pressure;
+	uint32_t fixed_humidity;
+
+	if (bmp280_read_fixed(dev, &fixed_temperature, &fixed_pressure,
+			humidity ? &fixed_humidity : NULL)) {
+		*temperature = (float) fixed_temperature / 100;
+		*pressure = (float) fixed_pressure / 256;
+		if (humidity)
+			*humidity = (float) fixed_humidity / 1024;
+		return DEV_OK;
+	}
+
+	return DEV_ERROR;
+}
+

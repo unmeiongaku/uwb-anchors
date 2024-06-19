@@ -119,5 +119,10 @@ typedef struct{
 }BMP280_HandleTypedef;
 
 dev_status_t bmp280_init(BMP280_HandleTypedef *dev, bmp280_params_t *params);
+dev_status_t bmp280_force_measurement(BMP280_HandleTypedef *dev);
+dev_status_t bmp280_is_measuring(BMP280_HandleTypedef *dev) ;
+dev_status_t bmp280_read_fixed(BMP280_HandleTypedef *dev, int32_t *temperature, uint32_t *pressure, uint32_t *humidity) ;
+dev_status_t bmp280_read_float(BMP280_HandleTypedef *dev, float *temperature, float *pressure, float *humidity);
+
 
 #endif /* BMP280_BMP280_H_ */

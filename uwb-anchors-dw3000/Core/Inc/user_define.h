@@ -16,6 +16,10 @@
 #define UWB_PERIOD_CALLBACK 				5
 #define PRESCALER_TIME_TICK_PERIOD		5
 
+#define BMP280_PERIOD_CALLBACK 			50
+
+#define LCD_PERIOD_CALLBACK 					200
+
 #define SSD1306_I2C			hi2c1
 #define SSD1306_STATUS 									0
 //0X78 				0

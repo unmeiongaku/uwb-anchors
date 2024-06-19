@@ -170,7 +170,6 @@ void proobject_init(proobject_t *const mobj){
 	mobj->active_state = ANCHOR_RESET_DWIC_SM;
 	/*Display Application on LCD*/
 	lcd_clear();
-	lcd_display_APP_NAME_();
 	proobject_state_machine(mobj,&ee);
 }
 

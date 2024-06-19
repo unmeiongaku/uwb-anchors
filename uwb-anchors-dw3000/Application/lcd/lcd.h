@@ -17,6 +17,6 @@ typedef enum{
 
 void lcd_clear();
 void lcd_display_APP_NAME_();
-
+void lcd_display_parameters(float temp, float press, float humi, float rssi, float distance);
 
 #endif /* APPLICATION_LCD_LCD_H_ */
