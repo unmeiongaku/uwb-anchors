@@ -40,6 +40,9 @@
 
 #define NUMBER_OF_TAG		1
 
+
+#define UWB_SPI hspi1
+
 #define ANCHOR_SELECT 		0
 /*	ANCHOR TYPE A					0
  *  ANCHOR TYPE B					1

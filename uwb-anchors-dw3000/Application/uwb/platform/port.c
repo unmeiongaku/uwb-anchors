@@ -14,6 +14,7 @@
 #include "port.h"
 #include <sys/types.h>
 #include "main.h"
+#include "delay_us.h"
 /****************************************************************************
  *
  *                              APP global variables

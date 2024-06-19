@@ -227,14 +227,16 @@ static event_status_t proobject_state_handle_RESET_DWIC_SM(proobject_t *const mo
 	switch(e->sig){
 		case ENTRY:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 			/*Reset DWIC function*/
 			reset_DWIC();
 			return EVENT_HANDLED;
 		}
 		case EXIT:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 		    /* Probe for the correct device driver. */
-		    dwt_probe((struct dwt_probe_s *)&dw3000_probe_interf);
+//		    dwt_probe((struct dwt_probe_s *)&dw3000_probe_interf);
 			return EVENT_HANDLED;
 		}
 		case NEXT_SIG:
@@ -264,6 +266,7 @@ static event_status_t proobject_state_handle_INIT_SM(proobject_t *const mobj, ev
 	switch(e->sig){
 		case ENTRY:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 			/*Init DW3000*/
 			if(dwt_initialise(DWT_DW_IDLE) == DWT_ERROR){
 				/*False Init*/
@@ -320,6 +323,7 @@ static event_status_t proobject_state_handle_INIT_SM(proobject_t *const mobj, ev
 		}
 		case EXIT:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 			return EVENT_HANDLED;
 		}
 		case NEXT_SIG:
@@ -335,6 +339,7 @@ static event_status_t proobject_state_handle_ANCHOR_RX_POLLING_CHECKING_SM(proob
 	switch(e->sig){
 		case ENTRY:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 			mobj->check_hi_mask = false;
 			mobj->check_lo_mask = false;
 			mobj->firstcheck = true;
@@ -366,6 +371,7 @@ static event_status_t proobject_state_handle_ANCHOR_RX_POLLING_CHECKING_SM(proob
 		}
 		case EXIT:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 			return EVENT_HANDLED;
 		}
 		case NEXT_SIG:
@@ -420,6 +426,7 @@ static event_status_t proobject_state_handle_ANCHOR_FALSE_POLLING_CHECKING_SM(pr
 	switch(e->sig){
 	case ENTRY:
 	{
+		HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 		check_for_status_errors(mobj->status_reg, errors);
         if (!(mobj->status_reg & DWT_INT_RXFCG_BIT_MASK))
         {
@@ -444,6 +451,7 @@ static event_status_t proobject_state_handle_ANCHOR_FALSE_POLLING_CHECKING_SM(pr
 	}
 	case EXIT:
 	{
+		HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 		return EVENT_HANDLED;
 	}
 	case TICK_SIG:
@@ -464,6 +472,7 @@ static event_status_t proobject_state_handle_ANCHOR_CLASSIFY_RX_BUFFER_SM(proobj
 	switch(e->sig){
 		case ENTRY:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 			mobj->check_hi_mask = false;
 			mobj->check_lo_mask = false;
 			mobj->firstcheck = true;
@@ -476,6 +485,7 @@ static event_status_t proobject_state_handle_ANCHOR_CLASSIFY_RX_BUFFER_SM(proobj
 		}
 		case EXIT:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 			return EVENT_HANDLED;
 		}
 		case NEXT_SIG:
@@ -535,6 +545,7 @@ static event_status_t proobject_state_handle_ANCHOR_OVERLOAD_RX_BUFER_SM(proobje
 	switch(e->sig){
 		case ENTRY:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
             errors[RTO_ERR_IDX] += 1;
             /*
              * If any error occurs, we can reset the STS count back to default value.
@@ -544,6 +555,7 @@ static event_status_t proobject_state_handle_ANCHOR_OVERLOAD_RX_BUFER_SM(proobje
 		}
 		case EXIT:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 			return EVENT_HANDLED;
 		}
 		case NEXT_SIG:
@@ -559,6 +571,7 @@ static event_status_t proobject_state_handle_ANCHOR_RX_POLL_MSG_SM(proobject_t *
 	switch(e->sig){
 		case ENTRY:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 #if NUMBER_OF_TAG!=1
  				initiatorAdress[0] = rx_buffer[7]; //tutaj
  				initiatorAdress[1] = rx_buffer[8];
@@ -603,6 +616,7 @@ static event_status_t proobject_state_handle_ANCHOR_RX_POLL_MSG_SM(proobject_t *
 		}
 		case EXIT:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 			return EVENT_HANDLED;
 		}
 		case TICK_SIG:
@@ -640,6 +654,7 @@ static event_status_t  proobject_state_handle_ANCHOR_RX_FINAL_MSG_SM(proobject_t
 	switch(e->sig){
 		case ENTRY:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
             uint64_t final_rx_ts;
             uint32_t poll_tx_ts, resp_rx_ts, final_tx_ts;
             uint32_t poll_rx_ts_32, resp_tx_ts_32, final_rx_ts_32;
@@ -691,6 +706,7 @@ static event_status_t  proobject_state_handle_ANCHOR_RX_FINAL_MSG_SM(proobject_t
 		}
 		case EXIT:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 			return EVENT_HANDLED;
 		}
 		case NEXT_SIG:
@@ -722,6 +738,7 @@ static event_status_t proobject_state_handle_ANCHOR_RX_NO_MSG_SM(proobject_t *co
 	switch(e->sig){
 		case ENTRY:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
             errors[BAD_FRAME_ERR_IDX] += 1;
             /*
              * If any error occurs, we can reset the STS count back to default value.
@@ -732,6 +749,7 @@ static event_status_t proobject_state_handle_ANCHOR_RX_NO_MSG_SM(proobject_t *co
 		}
 		case EXIT:
 		{
+			HAL_GPIO_TogglePin(MCU_LED_1_GPIO_Port, MCU_LED_1_Pin);
 			return EVENT_HANDLED;
 		}
 		case NEXT_SIG:
